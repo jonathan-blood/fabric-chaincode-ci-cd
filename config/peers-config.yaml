@@ -1,0 +1,8 @@
+api_endpoint: 
+api_key: 
+api_secret: 
+channel_name: channel
+org1_peers:
+- Org1 Peer1
+org2_peers:
+- Org2 Peer1

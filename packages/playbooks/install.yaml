@@ -1,0 +1,31 @@
+- name: Install chaincode
+  hosts: localhost
+  vars_files:
+    - /peers-config/peers-config.yaml
+  tasks:
+    - name: Install on Org1 peers
+      ibm.blockchain_platform.installed_chaincode:
+        state: present
+        api_endpoint: "{{ api_endpoint }}"
+        api_authtype: basic
+        api_key: "{{ api_key }}"
+        api_secret: "{{ api_secret }}"
+        peer: "{{ item }}"
+        identity: "/org1-admin-identity/Org1MSPAdmin_identity.json"
+        msp_id: org1msp
+        path: "../{{ package_name }}@{{ package_version }}.cds"
+      with_items:
+        - "{{ org1_peers }}"
+    - name: Install on Org2 peers
+      ibm.blockchain_platform.installed_chaincode:
+        state: present
+        api_endpoint: "{{ api_endpoint }}"
+        api_authtype: basic
+        api_key: "{{ api_key }}"
+        api_secret: "{{ api_secret }}"
+        peer: "{{ item }}"
+        identity: "/org2-admin-identity/Org2MSPAdmin_identity.json"
+        msp_id: org2msp
+        path: "../{{ package_name }}@{{ package_version }}.cds"
+      with_items:
+        - "{{ org2_peers }}"

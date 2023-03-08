@@ -1,0 +1,19 @@
+- name: Instantiate chaincode
+  hosts: localhost
+  vars_files:
+    - /peers-config/peers-config.yaml
+  tasks:
+    - name: Instantiate the chaincode
+      ibm.blockchain_platform.instantiated_chaincode:
+        state: present
+        api_endpoint: "{{ api_endpoint }}"
+        api_authtype: basic
+        api_key: "{{ api_key }}"
+        api_secret: "{{ api_secret }}"
+        peer: "{{ org1_peers[0] }}"
+        identity: "/org1-admin-identity/Org1MSPAdmin_identity.json"
+        msp_id: org1msp
+        channel: "{{ channel_name }}"
+        name: "{{ package_name }}"
+        version: "{{ package_version }}"
+        endorsement_policy: AND('org1msp.peer', 'org2msp.peer')

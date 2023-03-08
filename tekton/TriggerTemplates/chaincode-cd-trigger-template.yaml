@@ -1,0 +1,36 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: chaincode-cd-trigger-template
+spec:
+  params:
+    - name: commitId
+    - name: url
+    - name: appName
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: chaincode-cd-pipeline-
+      spec:
+        params:
+           - name: package-repo
+             value: 
+           - name: gitops-repo
+             value: 
+           - name: package-name
+             value: 
+        pipelineRef:
+          name: chaincode-cd-pipeline
+        workspaces:
+          - name: workspace
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 2Gi
+        serviceAccountName: pipeline
+        timeout: 1h0m0s
+

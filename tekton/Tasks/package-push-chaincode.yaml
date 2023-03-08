@@ -1,0 +1,99 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: package-push-chaincode
+spec:
+  params:
+    - name: package-version
+      type: string
+    - name: package-destination
+      type: string
+    - name: package-name
+      type: string
+  steps:
+    - name: build
+      image: node:12-stretch
+      workingdir: $(workspaces.output.path)
+      command:
+        - /bin/bash
+        - "-c"
+      args:
+        - >-
+          set -e
+
+          npm install
+
+          if [ -d client ]; then
+
+            pushd client
+
+            npm install
+
+            popd
+
+          fi
+
+          npm run build --if-present
+    - name: archive
+      command:
+        - /bin/bash
+        - "-c"
+      args: 
+        - >-
+          cd ..
+
+          mkdir archive
+
+          cp -r output archive/src
+
+          cd archive/src
+
+          rm -rf node_modules coverage tests local-docker-network runbook ci .git .vscode
+
+          cd ../..
+
+          cp -r archive/src/META-INF archive
+
+          tar -czf $(params.package-name).tgz -C archive .
+
+          mv $(params.package-name).tgz ./output/$(params.package-name).tgz
+      image: image-registry.openshift-image-registry.svc:5000/client-svc/package-push-chaincode
+      resources: {}
+      workingDir: $(workspaces.output.path)
+    - name: package
+      command:
+        - /bin/bash
+        - "-c"
+      args:
+        - cds --create --lang node --name $(params.package-name) --version $(params.package-version) --output $(params.package-name)@$(params.package-version).cds $(params.package-name).tgz
+      image: image-registry.openshift-image-registry.svc:5000/client-svc/package-push-chaincode
+      resources: {}
+      workingDir: $(workspaces.output.path)
+    - name: push
+      command:
+        - /bin/bash
+        - "-c"
+      args:
+        - >-
+          git clone $(params.package-destination) git-packages
+
+          echo Pushing chaincode package $(params.package-name)@$(params.package-version).cds
+
+          git config --global user.email "tekton@ibmcloud.com"
+
+          git config --global user.name "Tekton Pipeline"
+
+          cd git-packages
+
+          cp ../$(params.package-name)@$(params.package-version).cds .
+          
+          git add .
+
+          git commit -m "Pushing new chaincode package"
+
+          git push
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      resources: {}
+      workingDir: $(workspaces.output.path)
+  workspaces:
+    - name: output

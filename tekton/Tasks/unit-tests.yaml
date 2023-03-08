@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: unit-tests
+spec:
+  steps:
+    - image: "node:12-stretch"
+      name: install
+      resources: {}
+      script: |
+        set -e
+        npm install
+      workingDir: $(workspaces.output.path)
+    - image: "node:12-stretch"
+      name: test
+      resources: {}
+      script: |
+        set -e
+        npm test
+      workingDir: $(workspaces.output.path)
+  workspaces:
+    - description: The git repo will be cloned onto the volume backing this workspace
+      name: output

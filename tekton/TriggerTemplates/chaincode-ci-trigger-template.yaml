@@ -1,0 +1,39 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: chaincode-ci-trigger-template
+spec:
+  params:
+    - name: commitId
+    - name: url
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: chaincode-ci-pipeline-
+      spec:
+        params:
+          - name: source-repo
+            value: $(tt.params.url)
+          - name: gitops-repo
+            value: 
+          - name: package-version
+            value: $(tt.params.commitId)
+          - name: package-destination
+            value: 
+          - name: package-name
+            value: 
+        pipelineRef:
+          name: chaincode-ci-pipeline
+        workspaces:
+          - name: git-source
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 2Gi
+        serviceAccountName: pipeline
+        timeout: 1h0m0s
+

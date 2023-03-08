@@ -1,0 +1,42 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: instantiate-chaincode
+spec:
+  params:
+    - name: package-name
+      type: string
+  steps:
+    - name: instantiate-chaincode
+      command:
+        - /bin/bash
+        - "-c"
+      args: 
+        - >-
+          VERSION=$(awk '/version: /{print $NF}' ./gitops/$(params.package-name)/requirements.yaml)
+
+          ANSIBLE_COLLECTIONS_PATH=/root/.ansible/collections ansible-playbook ./packages/playbooks/instantiate.yaml -e "package_name=$(params.package-name) package_version=$VERSION"
+      image: image-registry.openshift-image-registry.svc:5000/client-svc/install-instantiate-chaincode
+      resources: {}
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: peers-config
+          mountPath: /peers-config
+        - name: org1-admin-identity
+          mountPath: /org1-admin-identity
+        - name: org2-admin-identity
+          mountPath: /org2-admin-identity
+      workingDir: $(workspaces.output.path)
+  volumes:
+    - name: peers-config
+      configMap:
+        name: peers-config
+    - name: org1-admin-identity
+      secret:
+        secretName: org1-admin-identity 
+    - name: org2-admin-identity
+      secret:
+        secretName: org2-admin-identity 
+  workspaces:
+    - name: output

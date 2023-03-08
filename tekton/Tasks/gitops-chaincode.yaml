@@ -1,0 +1,45 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: gitops-chaincode
+spec:
+  params:
+    - name: package-name
+      type: string
+    - name: package-version
+      type: string
+    - name: gitops-repo
+      type: string
+  steps:
+    - args:
+        - >-
+          set -e
+
+          echo Setting $(params.package-name) package to version $(params.package-version)
+
+          git clone -b master $(params.gitops-repo) gitops
+
+          cd gitops
+
+          git config --global user.email "tekton@ibmcloud.com"
+
+          git config --global user.name "Tekton Pipeline"
+
+          cp requirements-template.yaml ./$(params.package-name)/requirements.yaml
+
+          sed -i "s|<VERSION>|$(params.package-version)|g" ./$(params.package-name)/requirements.yaml
+
+          git add .
+
+          git commit -m "Updating package version" --allow-empty
+
+          git push
+      command:
+        - /bin/bash
+        - "-c"
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      name: gitops-step
+      resources: {}
+      workingDir: $(workspaces.output.path)
+  workspaces:
+    - name: output

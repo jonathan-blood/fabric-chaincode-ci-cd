@@ -1,0 +1,86 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: chaincode-cd-pipeline
+spec:
+  params:
+    - name: gitops-repo
+      type: string
+    - name: package-repo
+      type: string
+    - name: package-name
+      type: string
+  tasks:
+    - name: git-clone-gitops
+      params:
+        - name: url
+          value: $(params.gitops-repo)
+        - name: revision
+          value: master
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: deleteExisting
+          value: 'true'
+        - name: subdirectory
+          value: 'gitops'
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: workspace
+    - name: git-clone-packages
+      params:
+        - name: url
+          value: $(params.package-repo)
+        - name: revision
+          value: master
+        - name: submodules
+          value: 'true'
+        - name: depth
+          value: '1'
+        - name: sslVerify
+          value: 'true'
+        - name: deleteExisting
+          value: 'true'
+        - name: subdirectory
+          value: 'packages'
+      runAfter:
+        - git-clone-gitops
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: workspace
+    - name: install-chaincode
+      params:
+        - name: package-name
+          value: $(params.package-name)
+      runAfter:
+        - git-clone-packages
+      taskRef:
+        kind: Task
+        name: install-chaincode
+      workspaces:
+        - name: output
+          workspace: workspace
+    - name: instantiate-chaincode
+      params:
+        - name: package-name
+          value: $(params.package-name)
+      runAfter:
+        - install-chaincode
+      taskRef:
+        kind: Task
+        name: instantiate-chaincode
+      workspaces:
+        - name: output
+          workspace: workspace
+  workspaces:
+    - description: The git repo
+      name: workspace
